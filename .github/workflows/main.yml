@@ -73,3 +73,30 @@ jobs:
       run: xvfb-run --auto-servernum ./node_modules/.bin/grunt nightwatch_retries
     - name: Shutdown CouchDB
       run: npm run docker:down
+  after-tests:
+    needs: run-e2e-tests # run after run-e2e-tests
+    runs-on: ubuntu-latest
+    if: success() # only run when all tests have passed
+    # store success output flag for ci job
+    outputs:
+      success: ${{ steps.setoutput.outputs.success }}
+    steps:
+      - id: setoutput
+        run: echo "::set-output name=success::true"
+  ci-tests:
+    runs-on: ubuntu-latest
+    if: always() # always run, so we never skip the check
+    needs: [run-unit-tests, run-e2e-tests, after-tests]
+    steps:
+      # pass step only when output of previous after-shards job is set
+      # in case at least one of the shard fails, after-shards is skipped
+      # and the output will not be set, which will then cause the ci job to fail
+      - run: |
+          passed="${{ needs.after-tests.outputs.success }}"
+          if [[ $passed == "true" ]]; then
+            echo "Tests passed"
+            exit 0
+          else
+            echo "Tests failed"
+            exit 1
+          fi
