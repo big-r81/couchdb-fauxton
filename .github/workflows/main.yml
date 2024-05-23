@@ -78,19 +78,23 @@ jobs:
     runs-on: ubuntu-latest
     if: success() # only run when all tests have passed
     # store success output flag for ci job
+    outputs:
+      TEST_SUCCESS: ${{ steps.check-success.outputs.SUCCESS }}
     steps:
-      - id: setoutput
-        run: echo "TESTS_SUCCESS=true" >> $GITHUB_ENV
+      - id: check_success
+        run: echo "SUCCESS=true" >> $GITHUB_OUTPUT
   ci-tests:
     runs-on: ubuntu-latest
     if: always() # always run, so we never skip the check
     needs: [run-unit-tests, run-e2e-tests, after-tests]
+    env:
+      TESTS_SUCCESS: ${{ needs.after-tests.outputs.TEST_SUCCESS }}
     steps:
       # pass step only when output of previous after-shards job is set
       # in case at least one of the shard fails, after-shards is skipped
       # and the output will not be set, which will then cause the ci job to fail
       - run: |
-          if [[ ${{ env.TESTS_SUCCESS }} == "true" ]]; then
+          if [[ $TESTS_SUCCESS == "true" ]]; then
             echo "Tests passed"
             exit 0
           else
