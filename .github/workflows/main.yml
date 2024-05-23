@@ -80,13 +80,13 @@ jobs:
     # store success output flag for ci job
     steps:
       - id: setoutput
-        run: echo "SUCCESS=true" >> $GITHUB_OUTPUT
+        run: echo "SUCCESS=true" >> $GITHUB_ENV
   ci-tests:
     runs-on: ubuntu-latest
     if: always() # always run, so we never skip the check
     needs: [run-unit-tests, run-e2e-tests, after-tests]
     env:
-      AFTER_TESTS: ${{ steps.setoutput.outputs.SUCCESS }}
+      AFTER_TESTS: ${{ env.SUCCESS }}
     steps:
       # pass step only when output of previous after-shards job is set
       # in case at least one of the shard fails, after-shards is skipped
